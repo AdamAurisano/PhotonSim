@@ -54,7 +54,7 @@ PhotonTracer::PhotonTracer(double fiberSeparation) : _container("data/wallReflec
 						     _wallReflectivity( "data/wallReflectivity.dat" ),
 						     _endcapReflectivity( "data/endReflectivity.dat" ),
 						     _width( 3.57 ) , _height( 5.59 ), _length( 1550.0 ),
-						     _fiberSeparation( fiberSeparation )
+						     _rtop(0.813), _rbottom(0.770), _fiberSeparation( fiberSeparation )
 {
   //old: width = 3.57, height = 5.59
   _gen.SetSeed(0);
@@ -69,10 +69,9 @@ PhotonTracer::PhotonTracer(double fiberSeparation) : _container("data/wallReflec
   _absXY->SetDirectory(0);
 
   //TVector3 p0, p1, p2;
-
   double cornerR = 0.79;
-  double cornerRTop = 0.813;
-  double cornerRBot = 0.770;
+  //double cornerRTop = 0.813;
+  //double cornerRBot = 0.770;
   
   RectSurface* end1 = new RectSurface(0.0, 0.0, 0.0,
 				      _width, 0.0, 0.0,
@@ -117,10 +116,10 @@ PhotonTracer::PhotonTracer(double fiberSeparation) : _container("data/wallReflec
   _container.AddCorner(_width, _height, cornerR, true, false);
   */
 
-  _container.AddCorner(0,      0,       cornerRBot, false, true);
-  _container.AddCorner(_width, 0,       cornerRBot, false, false);
-  _container.AddCorner(0,      _height, cornerRTop, true, true);
-  _container.AddCorner(_width, _height, cornerRTop, true, false);
+  _container.AddCorner(0,      0,       _rbottom, false, true);
+  _container.AddCorner(_width, 0,       _rbottom, false, false);
+  _container.AddCorner(0,      _height, _rtop, true, true);
+  _container.AddCorner(_width, _height, _rtop, true, false);
   
   //Adding fibers:
   /*
@@ -154,7 +153,7 @@ PhotonTracer::PhotonTracer(double fiberSeparation) : _container("data/wallReflec
   _container.AddFiber(xf2, yf2, 0.07/2);
   
   //_container.SetFiber(_length, 0.07, 0.5*(6.15 + 0.07));
-
+  
   //TGraph specGraph("data/bc517p_spectrum.dat");
   TGraph specGraph("data/novaSpectrum.dat");
 
@@ -213,17 +212,20 @@ bool PhotonTracer::TraceOnePhoton( double z, double x, double y, bool doRandomXY
   GeneratePhoton( z, x, y, doRandomXY );
   double eps = 1e-3;
 
-  if (!_container.IsInside(_photon))
+  //if (!_container.IsInside(_photon))
+  // {
+  //  //cout << "Photon outside the volume" << endl;
+  //  return false;
+  //}
+  if (!_container.IsInside(_photon.GetX0(), _photon.GetY0(), _width, _height, _rtop, _rbottom))
     {
       //cout << "Photon outside the volume" << endl;
       return false;
     }
-
-  cout << "Start Tracing" << endl;
+    
   //double step_size(2000.0);
   while ( true )
     {
-      cout << "New iteration" << endl;
       //_photon.Print();
       //stop tracing if weight drops too low
       //if (_photon.GetWeight() < 1.0e-5) return false;
@@ -317,13 +319,14 @@ bool PhotonTracer::TraceOnePhoton( double z, double x, double y, bool doRandomXY
 	  //oops, no reflecting surfaces
 	  //generate new photon 
 	  cout << "No reflection found! - reset" << endl;
-	  _container.IsInside(_photon, true);
+	  //_container.IsInside(_photon, true);
+	  //if (!_container.IsInside(_photon.GetX0(), _photon.GetY0(), _width, _height, _rtop, _rbottom))
 	  //_photon.Print();
-	  _container.GetBestIntersection( _photon, _photon.GetWavelength(), stepToInt, reflectivity, surfNx, surfNy, surfNz, true );
+	  //_container.GetBestIntersection( _photon, _photon.GetWavelength(), stepToInt, reflectivity, surfNx, surfNy, surfNz, true );
 	  cout << "----------------------------" << endl;
 	  return false;
-	  GeneratePhoton( z, x, y, doRandomXY);
-	  continue;
+	  //GeneratePhoton( z, x, y, doRandomXY);
+	  //continue;
 	}
 
       /*

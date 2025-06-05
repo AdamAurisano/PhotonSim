@@ -38,6 +38,8 @@ private:
   const double      _width;
   const double      _height;
   const double      _length;
+  const double      _rtop;
+  const double      _rbottom;
   const double      _fiberSeparation;
   TH2D*             _refXY;
   TH2D*             _attenXY;

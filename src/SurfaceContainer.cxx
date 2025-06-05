@@ -35,8 +35,60 @@ void SurfaceContainer::AddFiber( double x0, double y0, double r  )
   _fiberR.push_back(r);
 }
 
+bool SurfaceContainer::IsInside(double x, double y, double W, double H, double RTop, double RBottom)
+{
+  bool inside = true;
+  if (x < 0 || x > W || y < 0 || y > H) inside = false;
+
+  double xc(0), yc(0);
+
+  //Lower left  
+  xc = RBottom; yc = RBottom;
+  if (x < RBottom && y < RBottom)
+    {
+      double dx = x - xc;
+      double dy = y - yc;
+      if ( sqrt(dx*dx + dy*dy) > RBottom) inside = false;
+    }
+
+  //Lower right
+  xc = W - RBottom; yc = RBottom;
+  if (x > xc && y < yc)
+    {
+      double dx = x - xc;
+      double dy = y - yc;
+      if ( sqrt(dx*dx + dy*dy) > RBottom) inside = false;
+    }
+
+  //Upper left
+  xc = RTop; yc = H - RTop;
+  if (x < xc && y > yc)
+    {
+      double dx = x - xc;
+      double dy = y - yc;
+      if ( sqrt(dx*dx + dy*dy) > RTop) inside = false;
+    }
+
+  //Upper right
+  xc = W - RTop; yc = H - RTop;
+  if (x > xc && y > yc)
+    {
+      double dx = x - xc;
+      double dy = y - yc;
+      if ( sqrt(dx*dx + dy*dy) > RTop) inside = false;
+    }
+  return inside;
+}
+
+/*
 bool SurfaceContainer::IsInside(Trajectory& traj, bool debug )
 {
+  //cout << endl;
+  //cout << "Starting point: X = " << traj.GetR0().X()
+  //   << " Y = " << traj.GetR0().Y()
+  //   << " Z = " << traj.GetR0().Z()
+  //   << endl;
+  
   vector<array<double,3> > unitVec;
   unitVec.push_back( {1, 0, 0} );
   unitVec.push_back( {-1, 0, 0} );
@@ -45,23 +97,26 @@ bool SurfaceContainer::IsInside(Trajectory& traj, bool debug )
   unitVec.push_back( {0, 0, 1} );
   unitVec.push_back( {0, 0, -1} );
 
-  bool goodSurface(false), goodCorner(false);
+  bool isGood = true;
   for (int i = 0; i < (int)unitVec.size(); ++i)
     {
       Trajectory testPho = Trajectory(traj.GetX0(), traj.GetY0(), traj.GetZ0(),
 				      unitVec[i][0], unitVec[i][1], unitVec[i][2],
 				      0.0, 420.,true);
       double tmp_step = -9999;
-      //double tmp_refl = -9999;
-      //double tmp_nx(0.0), tmp_ny(0.0), tmp_nz(0.0);
-
+      double tmp_refl = -9999;
+      double tmp_nx(0.0), tmp_ny(0.0), tmp_nz(0.0);
+      
+      bool goodSurface = false;
       for (auto it = _surfaces.begin(); it != _surfaces.end(); ++it)
 	{
 	  RectSurface* tmp_surf = *it;
 	  double tmp_step = tmp_surf->StepToIntersect( traj );
 	  if (tmp_step > 0) goodSurface = true;
 	}
-
+      isGood = isGood && goodSurface;
+      
+      bool goodCorner = false;
       for (int iC = 0; iC < (int)_x0.size(); ++iC)
 	{
 	  double tmp_step(0);
@@ -69,6 +124,7 @@ bool SurfaceContainer::IsInside(Trajectory& traj, bool debug )
 	  FindCornerIntersection(traj, _x0[iC], _xc[iC], _y0[iC], _yc[iC], _rc[iC], tmp_step, tmp_nx, tmp_ny, tmp_nz);
 	  if (tmp_step > 0) goodCorner = true;
 	}
+      isGood = isGood && goodCorner;
       
       //GetBestIntersection(testPho, 420., tmp_step, tmp_refl, tmp_nx, tmp_ny, tmp_nz);
       if (debug) cout << "RHat: ( " << unitVec[i][0] << ", " << unitVec[i][1] << ", " << unitVec[i][2] << "): " << tmp_step << endl;
@@ -77,6 +133,7 @@ bool SurfaceContainer::IsInside(Trajectory& traj, bool debug )
   //return true;
   return goodSurface && goodCorner;
 }
+*/
 
 void SurfaceContainer::AddCorner(double x0, double y0, double r, bool isTop, bool isLeft)
 {
@@ -91,6 +148,7 @@ void SurfaceContainer::AddCorner(double x0, double y0, double r, bool isTop, boo
   _xc.push_back(xc);
   _yc.push_back(yc);
 }
+
 
 void SurfaceContainer::FindCornerIntersection(Trajectory& traj, double x0, double xc, double y0, double yc, double r,
 					      double& step, double& nx, double& ny, double& nz)

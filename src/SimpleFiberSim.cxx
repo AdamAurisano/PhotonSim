@@ -58,6 +58,12 @@ double FPIndex(double lambda)
   return 1.40 + 4549*x - 6.2e7*x*x;
 }
 
+double OilIndex(double lambda)
+{
+  double x = pow(lambda, -2);
+  return 1.45689 + 4362.*x;
+}
+
 //implement Fresnel equations
 double SimpleFiberSim::Reflectivity(double idx1, double idx2, double theta, bool isS)
 {
@@ -152,6 +158,7 @@ SimpleFiberSim::SimpleFiberSim(double zCut)
 
   _wlsIterations = 0;
 
+  /*
   _tree = new TTree("TrajCoord", "Tree with trajectory coordinates");
   _tree->Branch("x", &_x);
   _tree->Branch("y", &_y);
@@ -161,6 +168,7 @@ SimpleFiberSim::SimpleFiberSim(double zCut)
   _tree->Branch("dTdZ", &_dTdZ);
   _tree->Branch("vEff", &_vEff);
   _tree->Branch("beta", &_beta);
+  */
 }
 
 void SimpleFiberSim::GeneratePhoton( double x, double y, double z, double t, double wavelength)
@@ -232,7 +240,7 @@ bool SimpleFiberSim::TraceOnePhoton( double z )
       y = _photon.GetY0();
       r = sqrt( x*x + y*y );
       
-      double cellMediumIdx = 1.46;
+      //double cellMediumIdx = 1.46;
       double stepToAbs = 9999.0;
       double stepToWLS = 9999.0;
 
@@ -263,7 +271,8 @@ bool SimpleFiberSim::TraceOnePhoton( double z )
 	}
       else
 	{
-	  currIdx = cellMediumIdx;
+	  //currIdx = cellMediumIdx;
+	  currIdx = OilIndex(_photon.GetWavelength());
 	}
 
       //turn off absorption, do weighting instead
@@ -341,8 +350,12 @@ bool SimpleFiberSim::TraceOnePhoton( double z )
 	      nextIdx = FPIndex(_photon.GetWavelength());
 	      //nextIdx = 1.42;
 	    }
-	  else nextIdx = cellMediumIdx;
-
+	  else
+	    {
+	      //nextIdx = cellMediumIdx;
+	      nextIdx = OilIndex(_photon.GetWavelength());
+	    }
+	  
 	  //check for reflection
 	  double rTh = Reflectivity(currIdx, nextIdx, angleToFiber, _photon.GetIsS());
 	  
@@ -396,7 +409,7 @@ bool SimpleFiberSim::TraceOnePhoton( double z )
 	  //photon makes it to either end of the fiber
 	  if ( fabs(_photon.GetZ0()) >= _zCut) 
 	    {
-	      if (_vEff > 18 || _vEff < 10) _tree->Fill();
+	      //if (_vEff > 18 || _vEff < 10) _tree->Fill();
 	      //double veff = fabs(phoZ)/phoT;
 	      //if (veff > 18.5 || veff < 5) _tree->Fill();
 	      return true;

@@ -27,7 +27,7 @@
 using namespace std;
 using namespace TMath;
 
-const int nThreads = 8;
+const int nThreads = 50;
 const double v0 = 29.9792458/1.59;
 
 double   _zCut;
@@ -41,7 +41,7 @@ TH1D*    _hvEff[nThreads];
 TH2D*    _hDtDz_Dz[nThreads];
 TH2D*    _hBeta_Dz[nThreads];
 TH2D*    _hvEff_Dz[nThreads];
-TTree*   _tree[nThreads];
+//TTree*   _tree[nThreads];
 double   percentDone[nThreads];
 bool     isDone[nThreads];
 
@@ -73,7 +73,7 @@ void* GetFiberTime(void* arg)
 
   isDone[tID] = false;
   percentDone[tID] = 0.0;
-  iterations[tID] = 1e7;
+  iterations[tID] = 1e8;
   //iterations[tID] = 1e5;
   successes[tID] = 0;
 
@@ -134,7 +134,7 @@ void* GetFiberTime(void* arg)
   hName += tID;
   _hvEff_Dz[tID]    = (TH2D*)tracer->GetvEff_Dz()->Clone(hName);
 
-  _tree[tID]        = tracer->GetTree();
+  //_tree[tID]        = tracer->GetTree();
   //hName = "TrajTree";
   //hName += tID;
   //_tree[tID]->SetName(hName);
@@ -162,22 +162,40 @@ void GetFiberTime_mp(double zCut, int index=1)
     }
   TThread::Ps();
 
+  int nMeters = 10;
+  std::vector<Long64_t> meters(nMeters);
+  std::vector<Long64_t> totIter(nMeters);
   while (true)
-    {
+      {
       sleep(5);
       bool allDone = true;
+
+      for (int iMeter = 0; iMeter < nMeters; ++iMeter)
+        {
+          meters[iMeter] = 0;
+	  totIter[iMeter] = 0;
+        }
+
       for (int iThread = 0; iThread < nThreads; ++iThread)
-	{
-	  allDone = allDone && isDone[iThread];
-	  cout << iThread << ": " << setprecision(4) << fixed << percentDone[iThread] << "%     ";
-	}
+        {
+          allDone = allDone && isDone[iThread];
+          meters[iThread%nMeters] += percentDone[iThread]*iterations[iThread];
+          totIter[iThread%nMeters] += iterations[iThread];
+        }
+
+      for (int iMeter = 0; iMeter < nMeters; ++iMeter)
+        {
+          double percent = (totIter[iMeter] == 0) ? 0 :  meters[iMeter]/totIter[iMeter];
+          cout << iMeter << ": " << setprecision(4) << fixed << percent << "%     ";
+        }
       cout << "\r" << flush;
+
       if (allDone)
-	{
-	  cout << "\nAll threads seem to be finished!" << endl;
-	  break;
-	}
-    }
+        {
+          cout << "\nAll threads seem to be finished!" << endl;
+          break;
+        }
+      }
 
   for (int iThread = 0; iThread < nThreads; ++iThread)
     {
@@ -212,7 +230,7 @@ void GetFiberTime_mp(double zCut, int index=1)
   TH2D* hvEff_Dz = (TH2D*)_hvEff_Dz[0]->Clone("hvEff_Dz");
   hvEff_Dz->Reset();
 
-  TList treeList;
+  //TList treeList;
   //treeList.Add(_tree[0]);
   
   //TChain* chain = new TChain("TrajChain");
@@ -229,14 +247,14 @@ void GetFiberTime_mp(double zCut, int index=1)
       hDtDz_Dz->Add(_hDtDz_Dz[iThread], 1);
       hBeta_Dz->Add(_hBeta_Dz[iThread], 1);
       hvEff_Dz->Add(_hvEff_Dz[iThread], 1);
-      treeList.Add(_tree[iThread]);
-      _tree[iThread]->Print();
+      //treeList.Add(_tree[iThread]);
+      //_tree[iThread]->Print();
     }
 
-  cout << "Merging trees" << endl;
-  TTree* tree = TTree::MergeTrees(&treeList);  
-  cout << "Done merging trees" << endl;
-  tree->Print();
+  //cout << "Merging trees" << endl;
+  //TTree* tree = TTree::MergeTrees(&treeList);  
+  //cout << "Done merging trees" << endl;
+  //tree->Print();
   
   cout << "Fraction captured = " << successesTot/(double)iterationsTot << endl;
   /*
@@ -276,7 +294,7 @@ void GetFiberTime_mp(double zCut, int index=1)
   file->WriteTObject(hT, "Dt");
   file->WriteTObject(hvEff, "VEff");
 
-  file->WriteTObject(tree, "TrajTree");
+  //file->WriteTObject(tree, "TrajTree");
 
   file->Close();
 }

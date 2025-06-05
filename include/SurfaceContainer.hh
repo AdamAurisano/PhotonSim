@@ -23,7 +23,8 @@ public:
   //best wall or corner
   void GetBestIntersection( Trajectory& traj, double wavelength, double& step, double& reflectivity, double& nx, double& ny, double& nz, bool debug=false );
 
-  bool IsInside(Trajectory& traj, bool debug = false);
+  //bool IsInside(Trajectory& traj, bool debug = false);
+  bool IsInside(double x, double y, double W, double H, double RTop, double RBottom);
   
 private:
   //normal of a cylinder
